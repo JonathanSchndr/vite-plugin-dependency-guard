@@ -12,6 +12,12 @@ Modern frontend projects rely heavily on third-party packages. This plugin helps
 
 It does not replace tools like `npm audit`, but adds an additional early warning layer directly inside your Vite workflow.
 
+It now also adds:
+
+- **Phantom dependency detection** for undeclared transitive imports from `node_modules`
+- **Integrity baseline checks** for imported `node_modules` files (SHA-256)
+- **Background OSV live audits** with cached, non-blocking vulnerability lookups
+
 ## Installation
 
 ```bash
@@ -63,16 +69,29 @@ export default defineConfig({
 | `exclude` | `string[]` | `[]` | Package names to ignore |
 | `checkDevDeps` | `boolean` | `true` | Include `devDependencies` in checks |
 | `cacheTtlMs` | `number` | `24 * 60 * 60 * 1000` | Cache validity duration |
+| `detectPhantomDependencies` | `boolean` | `true` | Warn when imported packages are not in root `dependencies`/`peerDependencies` |
+| `enableIntegrityCheck` | `boolean` | `true` | Enable hash baseline checks for imported files from `node_modules` |
+| `integrityMaxFileSizeBytes` | `number` | `2 * 1024 * 1024` | Skip hashing files larger than this limit |
+| `enableLiveAudit` | `boolean` | `true` | Run asynchronous OSV.dev vulnerability checks |
+| `waitForAuditOnBuild` | `boolean` | `false` | Wait for OSV audit completion during `vite build` |
 
 ## Cache behavior
 
-Registry responses are cached in:
+Registry and OSV responses are cached in:
 
 ```txt
 node_modules/.cache/vite-plugin-dependency-guard/cache.json
 ```
 
 Each package entry is considered valid for 24 hours by default.
+
+Integrity baselines for imported `node_modules` files are stored in:
+
+```txt
+node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json
+```
+
+The plugin keeps computed hashes in memory during the Vite process to avoid repeated hashing during HMR.
 
 ## Compatibility
 
