@@ -587,7 +587,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       if (currentEntry.hash !== hashData.hash && !reportedIntegrityMismatches.has(baselineKey)) {
         reportedIntegrityMismatches.add(baselineKey);
         logger.reportIssues([
-          `Integrity mismatch for ${baselineKey}: hash changed since baseline. Possible local node_modules tampering.`
+          `Integrity mismatch for ${baselineKey}: hash changed since baseline. Possible local node_modules tampering. If this change is expected, regenerate node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json.`
         ]);
       }
 

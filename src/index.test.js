@@ -6,6 +6,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 
 import dependencyGuard from '../dist/index.js';
 
+const MAX_ASYNC_AUDIT_BLOCK_MS = 180;
+
 function createLoggerCollector() {
   const logs = { info: [], warn: [], error: [] };
   return {
@@ -212,7 +214,7 @@ test('runs OSV live audit asynchronously without blocking configResolved', async
     await plugin.configResolved({ root, logger, command: 'serve' });
     const elapsed = Date.now() - start;
 
-    assert.ok(elapsed < 180);
+    assert.ok(elapsed < MAX_ASYNC_AUDIT_BLOCK_MS);
 
     await new Promise((resolve) => setTimeout(resolve, 250));
     assert.ok(logs.info.some((entry) => entry.includes('Live audit found no known vulnerabilities')));
