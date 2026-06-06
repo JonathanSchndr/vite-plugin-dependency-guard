@@ -1,5 +1,10 @@
 # vite-plugin-dependency-guard
 
+[![npm version](https://img.shields.io/npm/v/vite-plugin-dependency-guard?logo=npm)](https://www.npmjs.com/package/vite-plugin-dependency-guard)
+[![npm downloads](https://img.shields.io/npm/dm/vite-plugin-dependency-guard?logo=npm)](https://www.npmjs.com/package/vite-plugin-dependency-guard)
+[![Build](https://img.shields.io/github/actions/workflow/status/JonathanSchndr/vite-plugin-dependency-guard/publish.yml?branch=main&label=build)](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/actions/workflows/publish.yml)
+[![License](https://img.shields.io/npm/l/vite-plugin-dependency-guard)](https://www.npmjs.com/package/vite-plugin-dependency-guard)
+
 `vite-plugin-dependency-guard` scans your project dependencies when Vite starts and helps surface common risk patterns in your dependency tree.
 
 ## Why this plugin?
@@ -8,7 +13,7 @@ Modern frontend projects rely heavily on third-party packages. This plugin helps
 
 - **Supply-chain risk windows** from extremely fresh releases (possible zero-day compromise windows)
 - **Zombie/unmaintained packages** that have not seen a release in years
-- **Potential typosquatting indicators** by making dependency checks visible during startup
+- **Registry/API issues** while resolving dependency metadata
 
 It does not replace tools like `npm audit`, but adds an additional early warning layer directly inside your Vite workflow.
 
@@ -53,7 +58,12 @@ export default defineConfig({
       maxUnmaintainedYears: 1,
       exclude: ['vite', '@types/node'],
       checkDevDeps: true,
-      cacheTtlMs: 24 * 60 * 60 * 1000
+      cacheTtlMs: 24 * 60 * 60 * 1000,
+      detectPhantomDependencies: true,
+      enableIntegrityCheck: true,
+      integrityMaxFileSizeBytes: 2 * 1024 * 1024,
+      enableLiveAudit: true,
+      waitForAuditOnBuild: false
     })
   ]
 });
@@ -92,6 +102,11 @@ node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json
 ```
 
 The plugin keeps computed hashes in memory during the Vite process to avoid repeated hashing during HMR.
+
+## Notes
+
+- OSV live audit runs in the background by default and does not block `vite serve`.
+- Set `waitForAuditOnBuild: true` if you want `vite build` to wait for live audit completion.
 
 ## Compatibility
 
