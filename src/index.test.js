@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 
-import dependencyGuard from './index.js';
+import dependencyGuard from '../dist/index.js';
 
 function createLoggerCollector() {
   const logs = { info: [], warn: [], error: [] };

@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "description": "Vite plugin that checks dependencies for supply-chain and maintenance risks.",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/index.js",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "import": "./src/index.js",
-      "default": "./src/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "files": [
-    "src/index.js",
-    "src/index.d.ts",
+    "dist/index.js",
+    "dist/index.d.ts",
     "README.md"
   ],
   "keywords": [
@@ -37,10 +37,14 @@
   "peerDependencies": {
     "vite": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
   },
+  "dependencies": {
+    "picocolors": "^1.1.1"
+  },
   "scripts": {
-    "test": "node --test",
+    "test": "pnpm build && node --test",
     "prepublishOnly": "pnpm test",
-    "publish:npm": "pnpm publish --access public"
+    "publish:npm": "pnpm publish --access public",
+    "build": "tsc -p tsconfig.json"
   },
   "packageManager": "pnpm@11.5.2",
   "engines": {
@@ -48,5 +52,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^5.9.2"
   }
 }

@@ -17,3 +17,5 @@ node_modules/.cache/
 .env
 .env.*
 !.env.example
+
+package-lock.json
