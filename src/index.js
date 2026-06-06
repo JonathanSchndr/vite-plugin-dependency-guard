@@ -89,7 +89,7 @@ function resolveIssues(packageName, registryData, now, options) {
     if (ageMs < options.minAgeDays * DAY_MS) {
       const ageDays = Math.max(0, Math.floor(ageMs / DAY_MS));
       issues.push(
-        `${packageName}@${latestTag} ist erst ${ageDays} Tage alt (minAgeDays=${options.minAgeDays}).`
+        `${packageName}@${latestTag} is only ${ageDays} days old (minAgeDays=${options.minAgeDays}).`
       );
     }
   }
@@ -101,7 +101,7 @@ function resolveIssues(packageName, registryData, now, options) {
     if (unmaintainedMs > thresholdMs) {
       const years = (unmaintainedMs / (365 * DAY_MS)).toFixed(1);
       issues.push(
-        `${packageName} wirkt unmaintained: letztes Release vor ${years} Jahren (maxUnmaintainedYears=${options.maxUnmaintainedYears}).`
+        `${packageName} appears unmaintained: last release was ${years} years ago (maxUnmaintainedYears=${options.maxUnmaintainedYears}).`
       );
     }
   }
@@ -119,11 +119,11 @@ async function fetchRegistryPackage(packageName) {
 
   if (!response.ok) {
     if (response.status === 404) {
-      return { error: `Paket ${packageName} wurde in der npm registry nicht gefunden.` };
+      return { error: `Package ${packageName} was not found in the npm registry.` };
     }
 
     return {
-      error: `Registry-Abfrage für ${packageName} fehlgeschlagen (HTTP ${response.status}).`
+      error: `Registry request for ${packageName} failed (HTTP ${response.status}).`
     };
   }
 
@@ -146,7 +146,7 @@ function createLogger(config, options) {
     },
     reportIssues(messages) {
       const block = messages.map((line) => `  • ${line}`).join('\n');
-      const text = `Dependency-Risiken gefunden:\n${block}`;
+      const text = `Dependency risks detected:\n${block}`;
       if (options.behavior === 'error') {
         this.error(text);
         throw new Error(text);
@@ -171,7 +171,7 @@ export default function dependencyGuard(userOptions = {}) {
       try {
         packageJson = await readJson(packageJsonPath);
       } catch (error) {
-        logger.warn(`Keine package.json unter ${packageJsonPath} gefunden. Prüfung übersprungen.`);
+        logger.warn(`No package.json found at ${packageJsonPath}. Skipping dependency checks.`);
         return;
       }
 
@@ -181,7 +181,7 @@ export default function dependencyGuard(userOptions = {}) {
       );
 
       if (!packageNames.length) {
-        logger.info('Keine zu prüfenden Abhängigkeiten gefunden.');
+        logger.info('No dependencies to check.');
         return;
       }
 
@@ -220,7 +220,7 @@ export default function dependencyGuard(userOptions = {}) {
       if (allIssues.length) {
         logger.reportIssues(allIssues);
       } else {
-        logger.info(pc.green(`Alle ${packageNames.length} Abhängigkeiten sehen unauffällig aus.`));
+        logger.info(`All ${packageNames.length} dependencies passed the configured checks.`);
       }
     }
   };

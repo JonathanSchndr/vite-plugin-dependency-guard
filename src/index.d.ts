@@ -2,20 +2,20 @@ import type { Plugin } from 'vite';
 
 export interface DependencyGuardOptions {
   /**
-   * Wie mit gefundenen Risiken umgegangen wird.
-   * - warn: nur Log-Ausgabe
-   * - error: wirft einen Fehler und stoppt Start/Build
+   * How findings should be handled.
+   * - warn: log only
+   * - error: throw and stop Vite startup/build
    */
   behavior?: 'warn' | 'error';
-  /** Cooldown für brandneue Releases (in Tagen). */
+  /** Cooldown for very new releases (in days). */
   minAgeDays?: number;
-  /** Ab wann ein Paket als unmaintained gilt (in Jahren). */
+  /** When a package should be treated as unmaintained (in years). */
   maxUnmaintainedYears?: number;
-  /** Paketnamen, die von der Prüfung ausgenommen werden. */
+  /** Package names that should be excluded from checks. */
   exclude?: string[];
-  /** Auch devDependencies prüfen. */
+  /** Whether to include devDependencies. */
   checkDevDeps?: boolean;
-  /** Cache-Gültigkeit in Millisekunden. */
+  /** Cache validity in milliseconds. */
   cacheTtlMs?: number;
 }
 

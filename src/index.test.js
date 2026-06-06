@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 
 import dependencyGuard from './index.js';
 
@@ -46,7 +46,7 @@ test('warns for very new dependency releases', async () => {
     await plugin.configResolved({ root, logger });
 
     assert.equal(logs.warn.length, 1);
-    assert.match(logs.warn[0], /Dependency-Risiken gefunden/);
+    assert.match(logs.warn[0], /Dependency risks detected/);
 
     const cachePath = path.join(
       root,
@@ -56,12 +56,12 @@ test('warns for very new dependency releases', async () => {
       'cache.json'
     );
 
-    await mkdir(path.dirname(cachePath), { recursive: true });
     const cacheRaw = await readFile(cachePath, 'utf8');
     const cache = JSON.parse(cacheRaw);
     assert.ok(cache.packages.example);
   } finally {
     globalThis.fetch = originalFetch;
+    await rm(root, { recursive: true, force: true });
   }
 });
 
@@ -91,8 +91,9 @@ test('throws in error mode when risks are found', async () => {
     const { logger } = createLoggerCollector();
     const plugin = dependencyGuard({ behavior: 'error', minAgeDays: 10 });
 
-    await assert.rejects(() => plugin.configResolved({ root, logger }), /Dependency-Risiken gefunden/);
+    await assert.rejects(() => plugin.configResolved({ root, logger }), /Dependency risks detected/);
   } finally {
     globalThis.fetch = originalFetch;
+    await rm(root, { recursive: true, force: true });
   }
 });
