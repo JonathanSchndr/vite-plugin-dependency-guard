@@ -109,7 +109,7 @@ function parsePackageNames(packageJson: PackageJson, checkDevDeps: boolean): str
   return [...names];
 }
 
-function parseDate(value: string | undefined): number | null {
+function parseDate(value: string | null | undefined): number | null {
   const timestamp = Date.parse(value ?? '');
   return Number.isFinite(timestamp) ? timestamp : null;
 }
@@ -135,7 +135,7 @@ function resolveIssues(
 ): string[] {
   const issues: string[] = [];
   const latestTag = registryData?.['dist-tags']?.latest;
-  const latestReleaseDateRaw = latestTag ? registryData?.time?.[latestTag] : undefined;
+  const latestReleaseDateRaw = latestTag ? registryData?.time?.[latestTag] : null;
   const latestReleaseDate = parseDate(latestReleaseDateRaw);
 
   if (latestReleaseDate !== null) {
@@ -249,7 +249,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       for (const packageName of packageNames) {
         const cacheEntry = cache.packages[packageName];
         const isCacheValid =
-          cacheEntry !== undefined && now - Number(cacheEntry.cachedAt || 0) <= options.cacheTtlMs;
+          cacheEntry != null && now - Number(cacheEntry.cachedAt || 0) <= options.cacheTtlMs;
 
         let registryData: RegistryData | undefined;
         if (isCacheValid) {
