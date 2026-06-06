@@ -34,9 +34,6 @@ async function fetchOsvBatch(packageNames: string[]): Promise<Record<string, Osv
   const results = json.results ?? [];
   for (let index = 0; index < packageNames.length; index += 1) {
     const packageName = packageNames[index];
-    if (!packageName) {
-      continue;
-    }
     resultMap[packageName] = results[index]?.vulns ?? [];
   }
 
