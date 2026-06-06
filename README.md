@@ -15,7 +15,7 @@ It does not replace tools like `npm audit`, but adds an additional early warning
 ## Installation
 
 ```bash
-npm install --save-dev vite-plugin-dependency-guard
+pnpm add -D vite-plugin-dependency-guard
 ```
 
 ## Usage
