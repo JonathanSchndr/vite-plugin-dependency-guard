@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.2...v1.1.0) (2026-06-06)
+
+
+### Features
+
+* add phantom dependency, integrity, and OSV audit checks ([fdbcc8c](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/fdbcc8c2f08b5bcaafee54c990e95778c3665565))
+
 ## [1.0.2](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.1...v1.0.2) (2026-06-06)
 
 
