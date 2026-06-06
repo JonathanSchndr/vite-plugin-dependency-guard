@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.1...v1.0.2) (2026-06-06)
+
+
+### Bug Fixes
+
+* remove --provenance from pnpm publish commands ([f20da9b](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/f20da9ba20c2b38e67ca6ccd31cbf95fce11a780))
+* remove --provenance from pnpm publish to unblock CI publishing ([dfef606](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/dfef60670221100492b6bda237b5b4b48800689f))
+
 ## [1.0.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.0...v1.0.1) (2026-06-06)
 
 
