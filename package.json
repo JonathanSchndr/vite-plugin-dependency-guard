@@ -1,0 +1,55 @@
+{
+  "name": "vite-plugin-dependency-guard",
+  "version": "1.0.0",
+  "description": "Vite plugin that checks dependencies for supply-chain and maintenance risks.",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "types": "./src/index.d.ts",
+  "files": [
+    "src/index.js",
+    "src/index.d.ts",
+    "README.md"
+  ],
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "security",
+    "supply-chain",
+    "dependency"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonathanSchndr/vite-plugin-dependency-guard.git"
+  },
+  "homepage": "https://github.com/JonathanSchndr/vite-plugin-dependency-guard#readme",
+  "bugs": {
+    "url": "https://github.com/JonathanSchndr/vite-plugin-dependency-guard/issues"
+  },
+  "license": "MIT",
+  "author": "JonathanSchndr",
+  "peerDependencies": {
+    "vite": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1"
+  },
+  "scripts": {
+    "test": "node --test",
+    "prepublishOnly": "pnpm test",
+    "publish:npm": "pnpm publish --access public"
+  },
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
