@@ -3,7 +3,17 @@ import path from 'node:path';
 import pc from 'picocolors';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_OPTIONS = {
+
+export interface DependencyGuardOptions {
+  behavior?: 'warn' | 'error';
+  minAgeDays?: number;
+  maxUnmaintainedYears?: number;
+  exclude?: string[];
+  checkDevDeps?: boolean;
+  cacheTtlMs?: number;
+}
+
+export const DEFAULT_OPTIONS: Required<DependencyGuardOptions> = {
   behavior: 'warn',
   minAgeDays: 3,
   maxUnmaintainedYears: 2,
@@ -12,6 +22,43 @@ const DEFAULT_OPTIONS = {
   cacheTtlMs: DAY_MS
 };
 
+interface PackageJson {
+  dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+}
+
+interface RegistryData {
+  time?: Record<string, string>;
+  'dist-tags'?: {
+    latest?: string;
+  };
+}
+
+interface CacheEntry {
+  cachedAt: number;
+  data: RegistryData;
+}
+
+interface CacheData {
+  packages: Record<string, CacheEntry>;
+}
+
+interface ViteLogger {
+  info?(message: string): void;
+  warn?(message: string): void;
+  error?(message: string): void;
+}
+
+interface ViteResolvedConfig {
+  root?: string;
+  logger?: ViteLogger;
+}
+
+interface DependencyGuardPlugin {
+  name: string;
+  configResolved(config: ViteResolvedConfig): Promise<void>;
+}
+
 const CACHE_RELATIVE_PATH = path.join(
   'node_modules',
   '.cache',
@@ -19,7 +66,7 @@ const CACHE_RELATIVE_PATH = path.join(
   'cache.json'
 );
 
-function normalizeOptions(options = {}) {
+function normalizeOptions(options: DependencyGuardOptions = {}): Required<DependencyGuardOptions> {
   return {
     ...DEFAULT_OPTIONS,
     ...options,
@@ -29,29 +76,32 @@ function normalizeOptions(options = {}) {
   };
 }
 
-async function readJson(filePath) {
+async function readJson<T>(filePath: string): Promise<T> {
   const content = await readFile(filePath, 'utf8');
-  return JSON.parse(content);
+  return JSON.parse(content) as T;
 }
 
-async function loadCache(cacheFile) {
+async function loadCache(cacheFile: string): Promise<CacheData> {
   try {
-    return await readJson(cacheFile);
+    const cache = await readJson<Partial<CacheData>>(cacheFile);
+    return {
+      packages: cache.packages ?? {}
+    };
   } catch {
     return { packages: {} };
   }
 }
 
-async function saveCache(cacheFile, cache) {
+async function saveCache(cacheFile: string, cache: CacheData): Promise<void> {
   await mkdir(path.dirname(cacheFile), { recursive: true });
   await writeFile(cacheFile, JSON.stringify(cache, null, 2), 'utf8');
 }
 
-function parsePackageNames(packageJson, checkDevDeps) {
-  const names = new Set(Object.keys(packageJson.dependencies || {}));
+function parsePackageNames(packageJson: PackageJson, checkDevDeps: boolean): string[] {
+  const names = new Set(Object.keys(packageJson.dependencies ?? {}));
 
   if (checkDevDeps) {
-    for (const dependency of Object.keys(packageJson.devDependencies || {})) {
+    for (const dependency of Object.keys(packageJson.devDependencies ?? {})) {
       names.add(dependency);
     }
   }
@@ -59,16 +109,16 @@ function parsePackageNames(packageJson, checkDevDeps) {
   return [...names];
 }
 
-function parseDate(value) {
-  const timestamp = Date.parse(value || '');
+function parseDate(value: string | undefined): number | null {
+  const timestamp = Date.parse(value ?? '');
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-function getLatestPublishDate(registryData) {
-  const allTimestamps = Object.entries(registryData?.time || {})
+function getLatestPublishDate(registryData: RegistryData | undefined): Date | null {
+  const allTimestamps = Object.entries(registryData?.time ?? {})
     .filter(([key]) => key !== 'created' && key !== 'modified')
     .map(([, value]) => parseDate(value))
-    .filter((value) => value !== null);
+    .filter((value): value is number => value !== null);
 
   if (!allTimestamps.length) {
     return null;
@@ -77,10 +127,15 @@ function getLatestPublishDate(registryData) {
   return new Date(Math.max(...allTimestamps));
 }
 
-function resolveIssues(packageName, registryData, now, options) {
-  const issues = [];
+function resolveIssues(
+  packageName: string,
+  registryData: RegistryData | undefined,
+  now: number,
+  options: Required<DependencyGuardOptions>
+): string[] {
+  const issues: string[] = [];
   const latestTag = registryData?.['dist-tags']?.latest;
-  const latestReleaseDateRaw = latestTag ? registryData?.time?.[latestTag] : null;
+  const latestReleaseDateRaw = latestTag ? registryData?.time?.[latestTag] : undefined;
   const latestReleaseDate = parseDate(latestReleaseDateRaw);
 
   if (latestReleaseDate !== null) {
@@ -109,7 +164,9 @@ function resolveIssues(packageName, registryData, now, options) {
   return issues;
 }
 
-async function fetchRegistryPackage(packageName) {
+async function fetchRegistryPackage(
+  packageName: string
+): Promise<{ data: RegistryData } | { error: string }> {
   const encodedName = packageName
     .split('/')
     .map((part) => encodeURIComponent(part))
@@ -127,24 +184,24 @@ async function fetchRegistryPackage(packageName) {
     };
   }
 
-  return { data: await response.json() };
+  return { data: (await response.json()) as RegistryData };
 }
 
-function createLogger(config, options) {
-  const log = config?.logger;
+function createLogger(config: ViteResolvedConfig, options: Required<DependencyGuardOptions>) {
+  const log = config.logger;
   const prefix = pc.bold(pc.cyan('[vite-plugin-dependency-guard]'));
 
   return {
-    info(message) {
+    info(message: string) {
       log?.info?.(`${prefix} ${message}`);
     },
-    warn(message) {
+    warn(message: string) {
       log?.warn?.(`${prefix} ${pc.yellow(message)}`);
     },
-    error(message) {
+    error(message: string) {
       log?.error?.(`${prefix} ${pc.red(message)}`);
     },
-    reportIssues(messages) {
+    reportIssues(messages: string[]) {
       const block = messages.map((line) => `  • ${line}`).join('\n');
       const text = `Dependency risks detected:\n${block}`;
       if (options.behavior === 'error') {
@@ -156,21 +213,21 @@ function createLogger(config, options) {
   };
 }
 
-export default function dependencyGuard(userOptions = {}) {
+export default function dependencyGuard(userOptions: DependencyGuardOptions = {}): DependencyGuardPlugin {
   const options = normalizeOptions(userOptions);
 
   return {
     name: 'vite-plugin-dependency-guard',
-    async configResolved(config) {
-      const rootDir = config.root || process.cwd();
+    async configResolved(config: ViteResolvedConfig): Promise<void> {
+      const rootDir = config.root ?? process.cwd();
       const logger = createLogger(config, options);
       const packageJsonPath = path.join(rootDir, 'package.json');
       const cachePath = path.join(rootDir, CACHE_RELATIVE_PATH);
 
-      let packageJson;
+      let packageJson: PackageJson;
       try {
-        packageJson = await readJson(packageJsonPath);
-      } catch (error) {
+        packageJson = await readJson<PackageJson>(packageJsonPath);
+      } catch {
         logger.warn(`No package.json found at ${packageJsonPath}. Skipping dependency checks.`);
         return;
       }
@@ -186,21 +243,20 @@ export default function dependencyGuard(userOptions = {}) {
       }
 
       const cache = await loadCache(cachePath);
-      cache.packages = cache.packages || {};
       const now = Date.now();
-      const allIssues = [];
+      const allIssues: string[] = [];
 
       for (const packageName of packageNames) {
         const cacheEntry = cache.packages[packageName];
         const isCacheValid =
-          cacheEntry && now - Number(cacheEntry.cachedAt || 0) <= options.cacheTtlMs;
+          cacheEntry !== undefined && now - Number(cacheEntry.cachedAt || 0) <= options.cacheTtlMs;
 
-        let registryData;
+        let registryData: RegistryData | undefined;
         if (isCacheValid) {
           registryData = cacheEntry.data;
         } else {
           const result = await fetchRegistryPackage(packageName);
-          if (result.error) {
+          if ('error' in result) {
             allIssues.push(result.error);
             continue;
           }
@@ -225,5 +281,3 @@ export default function dependencyGuard(userOptions = {}) {
     }
   };
 }
-
-export { DEFAULT_OPTIONS };
