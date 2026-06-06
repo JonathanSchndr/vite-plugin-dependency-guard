@@ -325,6 +325,10 @@ function normalizeFileKey(rootDir: string, filePath: string): string {
   return path.relative(rootDir, filePath).replace(/\\/g, '/');
 }
 
+function isCacheEntryValid(cachedAt: number | undefined, now: number, ttlMs: number): boolean {
+  return typeof cachedAt === 'number' && cachedAt <= now && now - cachedAt <= ttlMs;
+}
+
 function isNodeModuleFile(filePath: string): boolean {
   return filePath.includes(`${path.sep}node_modules${path.sep}`);
 }
@@ -388,8 +392,13 @@ async function fetchOsvBatch(
   };
 
   const resultMap: Record<string, OsvVulnerability[]> = {};
+  const results = json.results ?? [];
   for (let index = 0; index < packageNames.length; index += 1) {
-    resultMap[packageNames[index]] = json.results?.[index]?.vulns ?? [];
+    const packageName = packageNames[index];
+    if (!packageName) {
+      continue;
+    }
+    resultMap[packageName] = results[index]?.vulns ?? [];
   }
 
   return resultMap;
@@ -408,7 +417,7 @@ async function runLiveAudit(params: {
   const uncached: string[] = [];
   for (const packageName of packageNames) {
     const cacheEntry = cache.osv[packageName];
-    const isValid = cacheEntry != null && now - Number(cacheEntry.cachedAt || 0) <= cacheTtlMs;
+    const isValid = cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, cacheTtlMs);
     if (!isValid) {
       uncached.push(packageName);
     }
@@ -446,6 +455,7 @@ async function runLiveAudit(params: {
 
 export default function dependencyGuard(userOptions: DependencyGuardOptions = {}): DependencyGuardPlugin {
   const options = normalizeOptions(userOptions);
+  const excludeSet = new Set(options.exclude);
   const hashCache = new Map<string, HashCacheEntry>();
   const reportedPhantomDeps = new Set<string>();
   const reportedIntegrityMismatches = new Set<string>();
@@ -482,7 +492,6 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       baseline = options.enableIntegrityCheck ? await loadBaseline(baselinePath) : { files: {} };
 
       declaredDirectDeps = parseDirectDependencyNames(packageJson);
-      const excludeSet = new Set(options.exclude);
       packageNamesForChecks = parsePackageNames(packageJson, options.checkDevDeps).filter(
         (packageName) => !excludeSet.has(packageName)
       );
@@ -495,7 +504,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
         for (const packageName of packageNamesForChecks) {
           const cacheEntry = cache.packages[packageName];
           const isCacheValid =
-            cacheEntry != null && now - Number(cacheEntry.cachedAt || 0) <= options.cacheTtlMs;
+            cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, options.cacheTtlMs);
 
           let registryData: RegistryData | undefined;
           if (isCacheValid) {
@@ -549,14 +558,14 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       }
 
       const packageName = extractPackageName(source);
-      if (!packageName || NODE_BUILTINS.has(packageName) || options.exclude.includes(packageName)) {
+      if (!packageName || NODE_BUILTINS.has(packageName) || excludeSet.has(packageName)) {
         return null;
       }
 
       if (!declaredDirectDeps.has(packageName) && !reportedPhantomDeps.has(packageName)) {
         reportedPhantomDeps.add(packageName);
         logger.warn(
-          `Phantom dependency detected: ${packageName} is imported from node_modules but is not declared in dependencies/peerDependencies.`
+          `Phantom dependency detected: ${packageName} is imported but is not declared in dependencies/peerDependencies.`
         );
       }
 
@@ -587,7 +596,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       if (currentEntry.hash !== hashData.hash && !reportedIntegrityMismatches.has(baselineKey)) {
         reportedIntegrityMismatches.add(baselineKey);
         logger.reportIssues([
-          `Integrity mismatch for ${baselineKey}: hash changed since baseline. Possible local node_modules tampering. If this change is expected, regenerate node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json.`
+          `Integrity mismatch for ${baselineKey}: hash changed since baseline. Possible local node_modules tampering. If this is expected, regenerate the integrity baseline.`
         ]);
       }
 

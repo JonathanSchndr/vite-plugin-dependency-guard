@@ -6,7 +6,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 
 import dependencyGuard from '../dist/index.js';
 
-const MAX_ASYNC_AUDIT_BLOCK_MS = 180;
+const MAX_ASYNC_AUDIT_BLOCK_TIME_MS = 180;
+const SIMULATED_AUDIT_DELAY_MS = 200;
+const AUDIT_COMPLETION_WAIT_MS = 250;
 
 function createLoggerCollector() {
   const logs = { info: [], warn: [], error: [] };
@@ -196,7 +198,7 @@ test('runs OSV live audit asynchronously without blocking configResolved', async
     }
 
     if (target === 'https://api.osv.dev/v1/querybatch') {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, SIMULATED_AUDIT_DELAY_MS));
       return {
         ok: true,
         json: async () => ({ results: [{ vulns: [] }] })
@@ -214,9 +216,9 @@ test('runs OSV live audit asynchronously without blocking configResolved', async
     await plugin.configResolved({ root, logger, command: 'serve' });
     const elapsed = Date.now() - start;
 
-    assert.ok(elapsed < MAX_ASYNC_AUDIT_BLOCK_MS);
+    assert.ok(elapsed < MAX_ASYNC_AUDIT_BLOCK_TIME_MS);
 
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    await new Promise((resolve) => setTimeout(resolve, AUDIT_COMPLETION_WAIT_MS));
     assert.ok(logs.info.some((entry) => entry.includes('Live audit found no known vulnerabilities')));
   } finally {
     globalThis.fetch = originalFetch;
