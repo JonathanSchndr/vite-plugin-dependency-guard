@@ -1,6 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import pc from 'picocolors';
+
+const c = {
+  bold: (s) => `\x1b[1m${s}\x1b[22m`,
+  cyan: (s) => `\x1b[36m${s}\x1b[39m`,
+  yellow: (s) => `\x1b[33m${s}\x1b[39m`,
+  red: (s) => `\x1b[31m${s}\x1b[39m`
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_OPTIONS = {
@@ -132,17 +138,17 @@ async function fetchRegistryPackage(packageName) {
 
 function createLogger(config, options) {
   const log = config?.logger;
-  const prefix = pc.bold(pc.cyan('[vite-plugin-dependency-guard]'));
+  const prefix = c.bold(c.cyan('[vite-plugin-dependency-guard]'));
 
   return {
     info(message) {
       log?.info?.(`${prefix} ${message}`);
     },
     warn(message) {
-      log?.warn?.(`${prefix} ${pc.yellow(message)}`);
+      log?.warn?.(`${prefix} ${c.yellow(message)}`);
     },
     error(message) {
-      log?.error?.(`${prefix} ${pc.red(message)}`);
+      log?.error?.(`${prefix} ${c.red(message)}`);
     },
     reportIssues(messages) {
       const block = messages.map((line) => `  • ${line}`).join('\n');
