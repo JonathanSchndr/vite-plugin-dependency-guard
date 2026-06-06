@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.0...v1.0.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* bump Node.js to v22 in publish workflows for pnpm v11 compatibility ([42167d9](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/42167d90ecc646adb547c2e20ecc0fec08c3546e))
+* bump Node.js to v22 in publish workflows for pnpm v11 compatibility ([153b794](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/153b794c28f0a572aa5074063199223bd5b835c0))
+
 ## 1.0.0 (2026-06-06)
 
 
