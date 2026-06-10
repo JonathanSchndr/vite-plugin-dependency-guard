@@ -10,11 +10,11 @@ const MAX_ASYNC_AUDIT_BLOCK_TIME_MS = 180;
 const SIMULATED_AUDIT_DELAY_MS = 200;
 const AUDIT_COMPLETION_WAIT_MS = 250;
 
-function createLoggerCollector() {
+function createLogCapture() {
   const logs = { info: [], warn: [], error: [] };
   return {
     logs,
-    logger: {
+    customLogger: {
       info: (msg) => logs.info.push(msg),
       warn: (msg) => logs.warn.push(msg),
       error: (msg) => logs.error.push(msg)
@@ -51,9 +51,9 @@ test('warns for very new dependency releases', async () => {
   };
 
   try {
-    const { logs, logger } = createLoggerCollector();
-    const plugin = dependencyGuard({ minAgeDays: 3, behavior: 'warn', enableLiveAudit: false });
-    await plugin.configResolved({ root, logger, command: 'serve' });
+    const { logs, customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ minAgeDays: 3, behavior: 'warn', enableLiveAudit: false, customLogger });
+    await plugin.configResolved({ root, command: 'serve' });
 
     assert.equal(logs.warn.length, 1);
     assert.match(logs.warn[0], /Dependency risks detected/);
@@ -113,14 +113,15 @@ test('does not read or write cache when disableCache is enabled', async () => {
   };
 
   try {
-    const { logs, logger } = createLoggerCollector();
+    const { logs, customLogger } = createLogCapture();
     const plugin = dependencyGuard({
       disableCache: true,
       minAgeDays: 0,
       maxUnmaintainedYears: 5,
-      enableLiveAudit: true
+      enableLiveAudit: true,
+      customLogger
     });
-    await plugin.configResolved({ root, logger, command: 'serve' });
+    await plugin.configResolved({ root, command: 'serve' });
 
     await new Promise((resolve) => setTimeout(resolve, AUDIT_COMPLETION_WAIT_MS));
     assert.ok(logs.info.some((entry) => entry.includes('Live audit found no known vulnerabilities')));
@@ -168,15 +169,16 @@ test('throws in error mode when risks are found', async () => {
   };
 
   try {
-    const { logger } = createLoggerCollector();
+    const { customLogger } = createLogCapture();
     const plugin = dependencyGuard({
       behavior: 'error',
       minAgeDays: 10,
-      enableLiveAudit: false
+      enableLiveAudit: false,
+      customLogger
     });
 
     await assert.rejects(
-      () => plugin.configResolved({ root, logger, command: 'serve' }),
+      () => plugin.configResolved({ root, command: 'serve' }),
       /Dependency risks detected/
     );
   } finally {
@@ -190,9 +192,9 @@ test('warns about phantom dependencies for undeclared bare imports', async () =>
   await writeFile(path.join(root, 'package.json'), JSON.stringify({}, null, 2), 'utf8');
 
   try {
-    const { logs, logger } = createLoggerCollector();
-    const plugin = dependencyGuard({ enableLiveAudit: false });
-    await plugin.configResolved({ root, logger, command: 'serve' });
+    const { logs, customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ enableLiveAudit: false, customLogger });
+    await plugin.configResolved({ root, command: 'serve' });
 
     plugin.resolveId?.('left-pad');
 
@@ -211,9 +213,9 @@ test('creates integrity baseline and warns when file hash changes', async () => 
   await writeFile(moduleFile, 'export default 1;', 'utf8');
 
   try {
-    const { logs, logger } = createLoggerCollector();
-    const plugin = dependencyGuard({ enableLiveAudit: false });
-    await plugin.configResolved({ root, logger, command: 'serve' });
+    const { logs, customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ enableLiveAudit: false, customLogger });
+    await plugin.configResolved({ root, command: 'serve' });
 
     await plugin.load?.(moduleFile);
 
@@ -276,11 +278,11 @@ test('runs OSV live audit asynchronously without blocking configResolved', async
   };
 
   try {
-    const { logs, logger } = createLoggerCollector();
-    const plugin = dependencyGuard({ minAgeDays: 0, maxUnmaintainedYears: 5 });
+    const { logs, customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ minAgeDays: 0, maxUnmaintainedYears: 5, customLogger });
 
     const start = Date.now();
-    await plugin.configResolved({ root, logger, command: 'serve' });
+    await plugin.configResolved({ root, command: 'serve' });
     const elapsed = Date.now() - start;
 
     assert.ok(elapsed < MAX_ASYNC_AUDIT_BLOCK_TIME_MS);

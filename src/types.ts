@@ -11,6 +11,17 @@ export interface DependencyGuardOptions {
   integrityMaxFileSizeBytes?: number;
   enableLiveAudit?: boolean;
   waitForAuditOnBuild?: boolean;
+  /**
+   * Override the output mechanism used by the plugin. When omitted the plugin
+   * writes directly to `console` so output is visible regardless of the host
+   * framework's Vite `logLevel` configuration (e.g. Nuxt silences Vite's
+   * `logger.info` by default).
+   */
+  customLogger?: {
+    info?: (message: string) => void;
+    warn?: (message: string) => void;
+    error?: (message: string) => void;
+  };
 }
 
 export interface PackageJson {
@@ -56,16 +67,9 @@ export interface IntegrityBaseline {
   files: Record<string, BaselineFileEntry>;
 }
 
-export interface ViteLogger {
-  info?(message: string): void;
-  warn?(message: string): void;
-  error?(message: string): void;
-}
-
 export interface ViteResolvedConfig {
   root?: string;
   command?: 'serve' | 'build';
-  logger?: ViteLogger;
   build?: {
     ssr?: boolean | string;
   };
@@ -80,8 +84,8 @@ export interface HashCacheEntry {
 export interface DependencyGuardPlugin {
   name: string;
   configResolved(config: ViteResolvedConfig): Promise<void>;
-  resolveId?(source: string): null;
-  load?(id: string): Promise<null>;
+  resolveId?(source: string, importer: string | undefined, options?: { ssr?: boolean }): null;
+  load?(id: string, options?: { ssr?: boolean }): Promise<null>;
   buildStart?(): Promise<void>;
 }
 
@@ -91,3 +95,12 @@ export interface GuardLogger {
   error(message: string): void;
   reportIssues(messages: string[]): void;
 }
+
+/**
+ * The fully resolved options after merging user input with defaults.
+ * `customLogger` remains optional since it genuinely defaults to `undefined`.
+ */
+export type ResolvedDependencyGuardOptions = Required<Omit<DependencyGuardOptions, 'customLogger'>> & {
+  customLogger?: DependencyGuardOptions['customLogger'];
+};
+

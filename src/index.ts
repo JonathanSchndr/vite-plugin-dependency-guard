@@ -84,23 +84,29 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
   const reportedPhantomDeps = new Set<string>();
   const reportedIntegrityMismatches = new Set<string>();
 
+  // Logger is created once and uses console by default so output is always
+  // visible regardless of the host framework's Vite logLevel setting.
+  const logger: GuardLogger = createLogger(options);
+
   let rootDir = process.cwd();
   let viteCommand = 'serve';
   let shouldRunForCurrentContext = true;
+  // Guards against running the expensive package checks more than once when
+  // frameworks like Nuxt pass the same plugin instance to multiple Vite builds.
+  let hasRunChecks = false;
   let declaredDirectDeps = new Set<string>();
-  let packageNamesForChecks: string[] = [];
   let baselinePath = '';
   let baseline: IntegrityBaseline = { files: {} };
-  let logger: GuardLogger = createLogger({}, options);
   let liveAuditPromise: Promise<void> | null = null;
 
   return {
     name: 'vite-plugin-dependency-guard',
 
     async configResolved(config) {
-      // Skip SSR builds in frameworks like Nuxt to avoid running checks twice.
+      // Skip SSR builds without touching shouldRunForCurrentContext so the
+      // client-build state is not corrupted when both builds share the same
+      // plugin instance (e.g. in Nuxt).
       if (config.build?.ssr) {
-        shouldRunForCurrentContext = false;
         return;
       }
 
@@ -109,11 +115,17 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       // absent from the config object; default to 'serve' so the checks still run.
       viteCommand = config.command ?? 'serve';
       shouldRunForCurrentContext = SUPPORTED_COMMANDS.has(viteCommand) || hasSupportedCliContext(process.argv);
-      logger = createLogger(config, options);
 
       if (!shouldRunForCurrentContext) {
         return;
       }
+
+      // Only run the package checks once even if configResolved is called for
+      // multiple non-SSR Vite instances (e.g. Nuxt worker builds).
+      if (hasRunChecks) {
+        return;
+      }
+      hasRunChecks = true;
 
       const packageJsonPath = path.join(rootDir, 'package.json');
       const cachePath = path.join(rootDir, CACHE_RELATIVE_PATH);
@@ -130,7 +142,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       baseline = options.enableIntegrityCheck ? await loadBaseline(baselinePath) : { files: {} };
 
       declaredDirectDeps = parseDirectDependencyNames(packageJson);
-      packageNamesForChecks = parsePackageNames(packageJson, options.checkDevDeps).filter(
+      const packageNamesForChecks = parsePackageNames(packageJson, options.checkDevDeps).filter(
         (packageName) => !excludeSet.has(packageName)
       );
 
@@ -199,7 +211,12 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       }
     },
 
-    resolveId(source) {
+    resolveId(source, _importer, hookOptions) {
+      // Skip SSR module resolution — use the hook's own SSR flag so the check
+      // is correct even when multiple Vite instances share this plugin object.
+      if (hookOptions?.ssr) {
+        return null;
+      }
       if (!shouldRunForCurrentContext || !options.detectPhantomDependencies) {
         return null;
       }
@@ -219,7 +236,12 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       return null;
     },
 
-    async load(id) {
+    async load(id, hookOptions) {
+      // Skip SSR module loading — use the hook's own SSR flag so the check
+      // is correct even when multiple Vite instances share this plugin object.
+      if (hookOptions?.ssr) {
+        return null;
+      }
       if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || !isNodeModuleFile(id)) {
         return null;
       }
