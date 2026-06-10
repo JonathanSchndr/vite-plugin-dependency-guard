@@ -1,6 +1,7 @@
 {
   "name": "vite-plugin-dependency-guard",
   "version": "1.2.5",
+  "$schema": "https://raw.githubusercontent.com/vitejs/vite-plugin-registry/refs/heads/main/data/schema/extended-package-json.schema.json",
   "description": "Vite plugin that checks dependencies for supply-chain and maintenance risks.",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,6 +37,13 @@
   "author": "JonathanSchndr",
   "peerDependencies": {
     "vite": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+  },
+  "compatiblePackages": {
+    "schemaVersion": 1,
+    "vite": {
+      "type": "compatible",
+      "versions": "^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
+    }
   },
   "scripts": {
     "test": "pnpm build && node --test",
