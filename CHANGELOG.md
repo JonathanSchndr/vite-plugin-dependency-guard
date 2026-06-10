@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.5](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.4...v1.2.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* skip Vite virtual modules in integrity checks ([48e1f09](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/48e1f095eebacc118851a7bd3c2d7b82f8a35fbc))
+* skip Vite virtual modules with null-byte prefix in integrity checks ([926f13c](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/926f13c9767926b1df9dd769f539134b5a36a849))
+
 ## [1.2.4](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.3...v1.2.4) (2026-06-10)
 
 
