@@ -1,7 +1,7 @@
 import { DAY_MS, DEFAULT_INTEGRITY_MAX_FILE_SIZE_BYTES } from './constants.js';
-import type { DependencyGuardOptions } from './types.js';
+import type { DependencyGuardOptions, ResolvedDependencyGuardOptions } from './types.js';
 
-export const DEFAULT_OPTIONS: Required<DependencyGuardOptions> = {
+export const DEFAULT_OPTIONS: ResolvedDependencyGuardOptions = {
   behavior: 'warn',
   minAgeDays: 3,
   maxUnmaintainedYears: 2,
@@ -13,10 +13,11 @@ export const DEFAULT_OPTIONS: Required<DependencyGuardOptions> = {
   enableIntegrityCheck: true,
   integrityMaxFileSizeBytes: DEFAULT_INTEGRITY_MAX_FILE_SIZE_BYTES,
   enableLiveAudit: true,
-  waitForAuditOnBuild: false
+  waitForAuditOnBuild: false,
+  customLogger: undefined
 };
 
-export function normalizeOptions(options: DependencyGuardOptions = {}): Required<DependencyGuardOptions> {
+export function normalizeOptions(options: DependencyGuardOptions = {}): ResolvedDependencyGuardOptions {
   return {
     ...DEFAULT_OPTIONS,
     ...options,

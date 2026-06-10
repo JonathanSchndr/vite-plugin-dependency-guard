@@ -1,5 +1,5 @@
 import { DAY_MS } from './constants.js';
-import type { DependencyGuardOptions, PackageJson, RegistryData } from './types.js';
+import type { DependencyGuardOptions, PackageJson, RegistryData, ResolvedDependencyGuardOptions } from './types.js';
 
 export function parsePackageNames(packageJson: PackageJson, checkDevDeps: boolean): string[] {
   const names = new Set(Object.keys(packageJson.dependencies ?? {}));
@@ -42,7 +42,7 @@ export function resolveIssues(
   packageName: string,
   registryData: RegistryData | undefined,
   now: number,
-  options: Required<DependencyGuardOptions>
+  options: ResolvedDependencyGuardOptions
 ): string[] {
   const issues: string[] = [];
   const latestTag = registryData?.['dist-tags']?.latest;

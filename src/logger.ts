@@ -1,4 +1,4 @@
-import type { DependencyGuardOptions, GuardLogger, ViteResolvedConfig } from './types.js';
+import type { GuardLogger, ResolvedDependencyGuardOptions } from './types.js';
 
 const ansi = {
   bold: (s: string) => `\x1b[1m${s}\x1b[22m`,
@@ -7,31 +7,35 @@ const ansi = {
   red: (s: string) => `\x1b[31m${s}\x1b[39m`
 };
 
-export function createLogger(
-  config: ViteResolvedConfig,
-  options: Required<DependencyGuardOptions>
-): GuardLogger {
-  const log = config.logger;
-  const prefix = ansi.bold(ansi.cyan('[vite-plugin-dependency-guard]'));
+const PREFIX = ansi.bold(ansi.cyan('[vite-plugin-dependency-guard]'));
+
+export function createLogger(options: ResolvedDependencyGuardOptions): GuardLogger {
+  const custom = options.customLogger;
+
+  const doInfo = custom?.info
+    ? (msg: string) => custom.info!(msg)
+    : (msg: string) => console.info(`${PREFIX} ${msg}`);
+
+  const doWarn = custom?.warn
+    ? (msg: string) => custom.warn!(msg)
+    : (msg: string) => console.warn(`${PREFIX} ${ansi.yellow(msg)}`);
+
+  const doError = custom?.error
+    ? (msg: string) => custom.error!(msg)
+    : (msg: string) => console.error(`${PREFIX} ${ansi.red(msg)}`);
 
   return {
-    info(message: string) {
-      log?.info?.(`${prefix} ${message}`);
-    },
-    warn(message: string) {
-      log?.warn?.(`${prefix} ${ansi.yellow(message)}`);
-    },
-    error(message: string) {
-      log?.error?.(`${prefix} ${ansi.red(message)}`);
-    },
+    info: doInfo,
+    warn: doWarn,
+    error: doError,
     reportIssues(messages: string[]) {
       const block = messages.map((line) => `  • ${line}`).join('\n');
       const text = `Dependency risks detected:\n${block}`;
       if (options.behavior === 'error') {
-        this.error(text);
+        doError(text);
         throw new Error(text);
       }
-      this.warn(text);
+      doWarn(text);
     }
   };
 }
