@@ -20,7 +20,8 @@ import {
   extractPackageName,
   isCacheEntryValid,
   isNodeModuleFile,
-  normalizeFileKey
+  normalizeFileKey,
+  sanitizeModuleFilePath
 } from './integrity.js';
 import { createLogger } from './logger.js';
 import { DEFAULT_OPTIONS, normalizeOptions } from './options.js';
@@ -277,7 +278,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
         return null;
       }
 
-      const baselineKey = normalizeFileKey(rootDir, id);
+      const baselineKey = normalizeFileKey(rootDir, sanitizeModuleFilePath(id));
       const currentEntry = baseline.files[baselineKey];
       if (!currentEntry) {
         baseline.files[baselineKey] = {
