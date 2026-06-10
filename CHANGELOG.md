@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.4](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.3...v1.2.4) (2026-06-10)
+
+
+### Bug Fixes
+
+* ignore Vite query suffixes in integrity checks ([89bfe59](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/89bfe599a7f13510f4cdc0d61234f64d656dc142))
+* ignore Vite query suffixes in integrity checks ([829c953](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/829c9536746e1b0853a8d4fd466ae73b522ac43d))
+
 ## [1.2.3](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.2...v1.2.3) (2026-06-10)
 
 
