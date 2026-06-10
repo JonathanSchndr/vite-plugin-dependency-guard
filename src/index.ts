@@ -20,6 +20,7 @@ import {
   extractPackageName,
   isCacheEntryValid,
   isNodeModuleFile,
+  isVirtualModule,
   normalizeFileKey,
   sanitizeModuleFilePath
 } from './integrity.js';
@@ -269,7 +270,8 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       if (hookOptions?.ssr) {
         return null;
       }
-      if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || !isNodeModuleFile(id)) {
+      // Skip Vite virtual modules (prefixed with \0) and non-node_modules files
+      if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || isVirtualModule(id) || !isNodeModuleFile(id)) {
         return null;
       }
 

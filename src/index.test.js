@@ -267,6 +267,35 @@ test('handles node_modules load ids with Vite query strings', async () => {
   }
 });
 
+test('skips Vite virtual modules with null-byte prefix', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
+  await mkdir(path.join(root, 'node_modules'), { recursive: true });
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({}, null, 2), 'utf8');
+
+  try {
+    const { customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ enableLiveAudit: false, customLogger });
+    await plugin.configResolved({ root, command: 'build' });
+
+    // Should not throw or error for virtual module with \0 prefix
+    const result = await plugin.load?.('\0commonjs-es-import:/path/to/index.js');
+    assert.strictEqual(result, null);
+
+    // Verify no baseline was created for virtual modules
+    const baselinePath = path.join(
+      root,
+      'node_modules',
+      '.cache',
+      'vite-plugin-dependency-guard',
+      'integrity-baseline.json'
+    );
+    const baselineExists = await readFile(baselinePath, 'utf8').catch(() => null);
+    assert.strictEqual(baselineExists, null, 'Baseline should not be created for virtual modules');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('runs OSV live audit asynchronously without blocking configResolved', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
   await writeFile(
