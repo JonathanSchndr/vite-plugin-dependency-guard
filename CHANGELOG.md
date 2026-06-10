@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.1.1...v1.2.0) (2026-06-10)
+
+
+### Features
+
+* Run dependency guard only for Vite/Nuxt dev and build ([f3ee365](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/f3ee36509a557c32982ab4a26f01a0495a2ba292))
+
 ## [1.1.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.1.0...v1.1.1) (2026-06-10)
 
 
