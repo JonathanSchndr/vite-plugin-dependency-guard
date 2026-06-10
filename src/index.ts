@@ -20,7 +20,6 @@ import {
   extractPackageName,
   isCacheEntryValid,
   isNodeModuleFile,
-  isVirtualModule,
   normalizeFileKey,
   sanitizeModuleFilePath
 } from './integrity.js';
@@ -41,21 +40,14 @@ export type { DependencyGuardOptions };
 
 const SUPPORTED_COMMANDS = new Set(['serve', 'build']);
 
-function hasSupportedCliContext(argv: readonly string[]): boolean {
-  const args = argv.map((entry) => entry.toLowerCase());
-  const hasVite = args.some((entry) => entry === 'vite' || entry.endsWith('/vite'));
-  const hasNuxt = args.some(
-    (entry) =>
-      entry === 'nuxt' ||
-      entry.endsWith('/nuxt') ||
-      entry === 'nuxi' ||
-      entry.endsWith('/nuxi') ||
-      entry === '.bin/nuxi' ||
-      entry.endsWith('/.bin/nuxi')
-  );
-  const hasDevOrBuild = args.some((entry) => entry === 'dev' || entry === 'build');
+function shouldRunForCommand(command: string | undefined): boolean {
+  // Frameworks that wrap Vite often provide no explicit Vite command.
+  // In that case we still run to stay framework-agnostic.
+  if (command == null || command.length === 0) {
+    return true;
+  }
 
-  return (hasVite || hasNuxt) && hasDevOrBuild;
+  return SUPPORTED_COMMANDS.has(command);
 }
 
 async function resolveInstalledVersions(
@@ -133,7 +125,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       // When frameworks like Nuxt call Vite programmatically the command may be
       // absent from the config object; default to 'serve' so the checks still run.
       viteCommand = config.command ?? 'serve';
-      shouldRunForCurrentContext = SUPPORTED_COMMANDS.has(viteCommand) || hasSupportedCliContext(process.argv);
+      shouldRunForCurrentContext = shouldRunForCommand(config.command);
 
       if (!shouldRunForCurrentContext) {
         return;
@@ -257,7 +249,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       if (!declaredDirectDeps.has(packageName) && !reportedPhantomDeps.has(packageName)) {
         reportedPhantomDeps.add(packageName);
         logger.warn(
-          `Phantom dependency detected: ${packageName} is imported but is not declared in dependencies/peerDependencies.`
+          `Phantom dependency detected: ${packageName} is imported but is not declared in dependencies/optionalDependencies/peerDependencies.`
         );
       }
 
@@ -271,7 +263,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
         return null;
       }
       // Skip Vite virtual modules (prefixed with \0) and non-node_modules files
-      if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || isVirtualModule(id) || !isNodeModuleFile(id)) {
+      if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || !isNodeModuleFile(id)) {
         return null;
       }
 

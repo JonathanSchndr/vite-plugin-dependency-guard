@@ -11,7 +11,7 @@
 
 ## Why this plugin?
 
-Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite dev/build` and (through Nuxt's Vite integration) `nuxt dev/build`, helping you catch issues early without replacing traditional tools like `npm audit`.
+Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite dev/build` and framework wrappers that use Vite internally (Nuxt, SvelteKit, Astro, and similar), helping you catch issues early without replacing traditional tools like `npm audit`.
 
 Think of it as **continuous dependency monitoring** — like having a security checkpoint integrated into your development loop.
 
@@ -42,10 +42,10 @@ Reports connection failures or missing packages when querying the npm registry, 
 - **When useful:** Catching misconfigured or misnamed dependencies during development
 
 ### 4. **Phantom Dependency Detection** 👻
-Warns when code imports packages that are NOT explicitly declared in your `package.json` dependencies or peerDependencies. These transitive imports can break unexpectedly during upgrades.
+Warns when code imports packages that are NOT explicitly declared in your `package.json` dependencies, optionalDependencies, or peerDependencies. These transitive imports can break unexpectedly during upgrades.
 
 - **What it checks:** Imports (`import "packageName"`) against declared dependencies
-- **Scope:** Tracks direct imports, not nested transitive imports
+- **Scope:** Tracks direct imports against `dependencies`, `optionalDependencies`, and `peerDependencies` (not nested transitive imports)
 - **When useful:** Catching implicit dependencies that cause "works on my machine" issues
 
 ### 5. **File Integrity Baselines** 🔐
@@ -153,6 +153,11 @@ export default defineNuxtConfig({
 Nuxt often sets Vite's root to the `app/` directory. The plugin automatically walks upward to the
 nearest parent `package.json`, so checks and cache files still use your project root.
 
+### Other Vite-based frameworks
+
+If your framework exposes Vite plugins (for example SvelteKit, Astro, or custom meta frameworks),
+register `dependencyGuard()` in that framework's Vite plugin section the same way.
+
 ## Options
 
 | Option | Type | Default | Description |
@@ -259,7 +264,7 @@ Track dependency health metrics:
 ## Compatibility
 
 - **Node.js**: `>=18.0.0`
-- **Vite**: `^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0`
+- **Vite**: `^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0`
 
 ## Limitations & Notes
 

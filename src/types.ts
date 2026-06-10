@@ -28,6 +28,7 @@ export interface PackageJson {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
 }
 
 export interface RegistryData {
@@ -69,7 +70,7 @@ export interface IntegrityBaseline {
 
 export interface ViteResolvedConfig {
   root?: string;
-  command?: 'serve' | 'build';
+  command?: string;
   build?: {
     ssr?: boolean | string;
   };
@@ -103,4 +104,3 @@ export interface GuardLogger {
 export type ResolvedDependencyGuardOptions = Required<Omit<DependencyGuardOptions, 'customLogger'>> & {
   customLogger?: DependencyGuardOptions['customLogger'];
 };
-

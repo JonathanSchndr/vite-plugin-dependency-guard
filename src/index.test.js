@@ -189,18 +189,43 @@ test('throws in error mode when risks are found', async () => {
 
 test('warns about phantom dependencies for undeclared bare imports', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
-  await writeFile(path.join(root, 'package.json'), JSON.stringify({}, null, 2), 'utf8');
+  await writeFile(
+    path.join(root, 'package.json'),
+    JSON.stringify({ optionalDependencies: { 'optional-lib': '^1.0.0' } }, null, 2),
+    'utf8'
+  );
+  const oldIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).startsWith('https://registry.npmjs.org/')) {
+      return {
+        ok: true,
+        json: async () => ({
+          'dist-tags': { latest: '1.0.0' },
+          time: {
+            created: oldIso,
+            modified: oldIso,
+            '1.0.0': oldIso
+          }
+        })
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${String(url)}`);
+  };
 
   try {
     const { logs, customLogger } = createLogCapture();
     const plugin = dependencyGuard({ enableLiveAudit: false, customLogger });
     await plugin.configResolved({ root, command: 'serve' });
 
+    plugin.resolveId?.('optional-lib');
     plugin.resolveId?.('left-pad');
 
     assert.equal(logs.warn.length, 1);
     assert.match(logs.warn[0], /Phantom dependency detected/);
   } finally {
+    globalThis.fetch = originalFetch;
     await rm(root, { recursive: true, force: true });
   }
 });
