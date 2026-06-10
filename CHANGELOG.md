@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 (2026-06-10)
+
+## What's Changed
+* refactor: core runtime for framework-agnostic Vite wrappers by @JonathanSchndr in https://github.com/JonathanSchndr/vite-plugin-dependency-guard/pull/30
+* feat: use Vite library mode as bundler by @JonathanSchndr in https://github.com/JonathanSchndr/vite-plugin-dependency-guard/pull/31
+* feat: add Vite Plugin Registry metadata by @JonathanSchndr in https://github.com/JonathanSchndr/vite-plugin-dependency-guard/pull/33
+* fix: duplicate entries in release-please changelog by @JonathanSchndr in https://github.com/JonathanSchndr/vite-plugin-dependency-guard/pull/34
+* fix: release-please previous_tag for GitHub notes by @JonathanSchndr in https://github.com/JonathanSchndr/vite-plugin-dependency-guard/pull/35
+
+
+**Full Changelog**: https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.5...v1.3.0
+
 ## [1.2.5](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.4...v1.2.5) (2026-06-10)
 
 
