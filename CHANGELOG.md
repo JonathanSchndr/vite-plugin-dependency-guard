@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.0...v1.2.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* Nuxt/nuxi compat, Vite 8 support, OSV version-filtered findings with terminal links ([233ea7e](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/233ea7e901f46037ed8bfeb1e6e1843aef4399ea))
+* Nuxt/nuxi compat, Vite 8 support, OSV version-filtered findings with terminal links ([d4fe689](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/d4fe689ebe8038073799b1e69cae663f4d4e2ad5))
+
 ## [1.2.0](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.1.1...v1.2.0) (2026-06-10)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-dependency-guard",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Vite plugin that checks dependencies for supply-chain and maintenance risks.",
   "type": "module",
   "main": "./dist/index.js",
