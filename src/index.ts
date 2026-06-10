@@ -42,10 +42,39 @@ const SUPPORTED_COMMANDS = new Set(['serve', 'build']);
 function hasSupportedCliContext(argv: readonly string[]): boolean {
   const args = argv.map((entry) => entry.toLowerCase());
   const hasVite = args.some((entry) => entry === 'vite' || entry.endsWith('/vite'));
-  const hasNuxt = args.some((entry) => entry === 'nuxt' || entry.endsWith('/nuxt'));
+  const hasNuxt = args.some(
+    (entry) =>
+      entry === 'nuxt' ||
+      entry.endsWith('/nuxt') ||
+      entry === 'nuxi' ||
+      entry.endsWith('/nuxi') ||
+      entry === '.bin/nuxi' ||
+      entry.endsWith('/.bin/nuxi')
+  );
   const hasDevOrBuild = args.some((entry) => entry === 'dev' || entry === 'build');
 
   return (hasVite || hasNuxt) && hasDevOrBuild;
+}
+
+async function resolveInstalledVersions(
+  rootDir: string,
+  packageNames: string[]
+): Promise<Map<string, string>> {
+  const versions = new Map<string, string>();
+  await Promise.all(
+    packageNames.map(async (packageName) => {
+      try {
+        const pkgPath = path.join(rootDir, 'node_modules', packageName, 'package.json');
+        const pkg = await readPackageJson<{ version?: string }>(pkgPath);
+        if (pkg.version) {
+          versions.set(packageName, pkg.version);
+        }
+      } catch {
+        // version stays unknown; OSV query falls back to package-only lookup
+      }
+    })
+  );
+  return versions;
 }
 
 export default function dependencyGuard(userOptions: DependencyGuardOptions = {}): DependencyGuardPlugin {
@@ -69,8 +98,16 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
     name: 'vite-plugin-dependency-guard',
 
     async configResolved(config) {
+      // Skip SSR builds in frameworks like Nuxt to avoid running checks twice.
+      if (config.build?.ssr) {
+        shouldRunForCurrentContext = false;
+        return;
+      }
+
       rootDir = config.root ?? process.cwd();
-      viteCommand = config.command ?? '';
+      // When frameworks like Nuxt call Vite programmatically the command may be
+      // absent from the config object; default to 'serve' so the checks still run.
+      viteCommand = config.command ?? 'serve';
       shouldRunForCurrentContext = SUPPORTED_COMMANDS.has(viteCommand) || hasSupportedCliContext(process.argv);
       logger = createLogger(config, options);
 
@@ -144,8 +181,10 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
         }
 
         if (options.enableLiveAudit) {
+          const installedVersions = await resolveInstalledVersions(rootDir, packageNamesForChecks);
           liveAuditPromise = runLiveAudit({
             packageNames: packageNamesForChecks,
+            installedVersions,
             cache,
             cachePath,
             cacheTtlMs: options.cacheTtlMs,

@@ -2,8 +2,16 @@ import { saveCache } from './cache-files.js';
 import { isCacheEntryValid } from './integrity.js';
 import type { CacheData, GuardLogger, OsvVulnerability } from './types.js';
 
-async function fetchOsvBatch(packageNames: string[]): Promise<Record<string, OsvVulnerability[]>> {
-  if (!packageNames.length) {
+function osvHyperlink(id: string): string {
+  const url = `https://osv.dev/vulnerability/${id}`;
+  // OSC 8 terminal hyperlink – works in iTerm2, GNOME Terminal, Windows Terminal, etc.
+  return `\x1b]8;;${url}\x1b\\${id}\x1b]8;;\x1b\\`;
+}
+
+async function fetchOsvBatch(
+  packages: Array<{ name: string; version?: string }>
+): Promise<Record<string, OsvVulnerability[]>> {
+  if (!packages.length) {
     return {};
   }
 
@@ -13,12 +21,18 @@ async function fetchOsvBatch(packageNames: string[]): Promise<Record<string, Osv
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      queries: packageNames.map((packageName) => ({
-        package: {
-          name: packageName,
-          ecosystem: 'npm'
+      queries: packages.map(({ name, version }) => {
+        const query: Record<string, unknown> = {
+          package: {
+            name,
+            ecosystem: 'npm'
+          }
+        };
+        if (version) {
+          query.version = version;
         }
-      }))
+        return query;
+      })
     })
   });
 
@@ -32,9 +46,11 @@ async function fetchOsvBatch(packageNames: string[]): Promise<Record<string, Osv
 
   const resultMap: Record<string, OsvVulnerability[]> = {};
   const results = json.results ?? [];
-  for (let index = 0; index < packageNames.length; index += 1) {
-    const packageName = packageNames[index];
-    resultMap[packageName] = results[index]?.vulns ?? [];
+  for (let index = 0; index < packages.length; index += 1) {
+    const key = packages[index].version
+      ? `${packages[index].name}@${packages[index].version}`
+      : packages[index].name;
+    resultMap[key] = results[index]?.vulns ?? [];
   }
 
   return resultMap;
@@ -42,24 +58,29 @@ async function fetchOsvBatch(packageNames: string[]): Promise<Record<string, Osv
 
 export async function runLiveAudit(params: {
   packageNames: string[];
+  installedVersions: Map<string, string>;
   cache: CacheData;
   cachePath: string;
   cacheTtlMs: number;
   disableCache: boolean;
   logger: GuardLogger;
 }): Promise<void> {
-  const { packageNames, cache, cachePath, cacheTtlMs, disableCache, logger } = params;
+  const { packageNames, installedVersions, cache, cachePath, cacheTtlMs, disableCache, logger } = params;
   const now = Date.now();
 
-  const uncached: string[] = [];
+  const uncached: Array<{ name: string; version?: string }> = [];
   if (disableCache) {
-    uncached.push(...packageNames);
+    for (const name of packageNames) {
+      uncached.push({ name, version: installedVersions.get(name) });
+    }
   } else {
-    for (const packageName of packageNames) {
-      const cacheEntry = cache.osv[packageName];
+    for (const name of packageNames) {
+      const version = installedVersions.get(name);
+      const cacheKey = version ? `${name}@${version}` : name;
+      const cacheEntry = cache.osv[cacheKey];
       const isValid = cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, cacheTtlMs);
       if (!isValid) {
-        uncached.push(packageName);
+        uncached.push({ name, version });
       }
     }
   }
@@ -69,14 +90,16 @@ export async function runLiveAudit(params: {
     const fetched = await fetchOsvBatch(uncached);
 
     if (disableCache) {
-      for (const packageName of uncached) {
-        fetchedWithoutCache[packageName] = fetched[packageName] ?? [];
+      for (const { name, version } of uncached) {
+        const key = version ? `${name}@${version}` : name;
+        fetchedWithoutCache[key] = fetched[key] ?? [];
       }
     } else {
-      for (const packageName of uncached) {
-        cache.osv[packageName] = {
+      for (const { name, version } of uncached) {
+        const key = version ? `${name}@${version}` : name;
+        cache.osv[key] = {
           cachedAt: now,
-          vulnerabilities: fetched[packageName] ?? []
+          vulnerabilities: fetched[key] ?? []
         };
       }
       await saveCache(cachePath, cache);
@@ -84,15 +107,18 @@ export async function runLiveAudit(params: {
   }
 
   const findings: string[] = [];
-  for (const packageName of packageNames) {
+  for (const name of packageNames) {
+    const version = installedVersions.get(name);
+    const cacheKey = version ? `${name}@${version}` : name;
     const vulnerabilities = disableCache
-      ? fetchedWithoutCache[packageName] ?? []
-      : cache.osv[packageName]?.vulnerabilities ?? [];
+      ? fetchedWithoutCache[cacheKey] ?? []
+      : cache.osv[cacheKey]?.vulnerabilities ?? [];
+    const label = version ? `${name}@${version}` : name;
     for (const vulnerability of vulnerabilities) {
+      const vulnId = vulnerability.id ?? 'unknown-id';
+      const idPart = vulnerability.id ? osvHyperlink(vulnId) : vulnId;
       findings.push(
-        `OSV: ${packageName} affected by ${vulnerability.id ?? 'unknown-id'}${
-          vulnerability.summary ? ` (${vulnerability.summary})` : ''
-        }`
+        `OSV: ${label} affected by ${idPart}${vulnerability.summary ? ` – ${vulnerability.summary}` : ''}`
       );
     }
   }

@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       vite:
-        specifier: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
-        version: 7.3.5
+        specifier: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+        version: 7.3.5(@types/node@25.9.1)
     devDependencies:
       '@types/node':
         specifier: ^25.9.1
@@ -668,7 +668,7 @@ snapshots:
 
   undici-types@7.24.6: {}
 
-  vite@7.3.5:
+  vite@7.3.5(@types/node@25.9.1):
     dependencies:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
@@ -677,4 +677,5 @@ snapshots:
       rollup: 4.61.1
       tinyglobby: 0.2.17
     optionalDependencies:
+      '@types/node': 25.9.1
       fsevents: 2.3.3
