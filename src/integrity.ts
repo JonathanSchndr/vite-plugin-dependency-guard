@@ -29,12 +29,25 @@ export function normalizeFileKey(rootDir: string, filePath: string): string {
   return path.relative(rootDir, filePath).replace(/\\/g, '/');
 }
 
+export function sanitizeModuleFilePath(filePath: string): string {
+  const queryIndex = filePath.indexOf('?');
+  const hashIndex = filePath.indexOf('#');
+  const suffixIndex =
+    queryIndex === -1
+      ? hashIndex
+      : hashIndex === -1
+        ? queryIndex
+        : Math.min(queryIndex, hashIndex);
+
+  return suffixIndex === -1 ? filePath : filePath.slice(0, suffixIndex);
+}
+
 export function isCacheEntryValid(cachedAt: number | undefined, now: number, ttlMs: number): boolean {
   return typeof cachedAt === 'number' && cachedAt <= now && now - cachedAt <= ttlMs;
 }
 
 export function isNodeModuleFile(filePath: string): boolean {
-  return filePath.includes(`${path.sep}node_modules${path.sep}`);
+  return sanitizeModuleFilePath(filePath).includes(`${path.sep}node_modules${path.sep}`);
 }
 
 export async function computeFileHash(
@@ -42,21 +55,22 @@ export async function computeFileHash(
   maxFileSizeBytes: number,
   hashCache: Map<string, HashCacheEntry>
 ): Promise<{ hash: string; size: number } | null> {
-  const fileStat = await stat(filePath);
+  const resolvedFilePath = sanitizeModuleFilePath(filePath);
+  const fileStat = await stat(resolvedFilePath);
 
   if (!fileStat.isFile() || fileStat.size > maxFileSizeBytes) {
     return null;
   }
 
-  const cached = hashCache.get(filePath);
+  const cached = hashCache.get(resolvedFilePath);
   if (cached && cached.mtimeMs === fileStat.mtimeMs && cached.size === fileStat.size) {
     return { hash: cached.hash, size: cached.size };
   }
 
-  const content = await readFile(filePath);
+  const content = await readFile(resolvedFilePath);
   const hash = createHash('sha256').update(content).digest('hex');
 
-  hashCache.set(filePath, {
+  hashCache.set(resolvedFilePath, {
     mtimeMs: fileStat.mtimeMs,
     size: fileStat.size,
     hash

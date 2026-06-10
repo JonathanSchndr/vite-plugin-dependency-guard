@@ -239,6 +239,34 @@ test('creates integrity baseline and warns when file hash changes', async () => 
   }
 });
 
+test('handles node_modules load ids with Vite query strings', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
+  const moduleFile = path.join(root, 'node_modules', 'example', 'index.vue');
+  await mkdir(path.dirname(moduleFile), { recursive: true });
+  await writeFile(path.join(root, 'package.json'), JSON.stringify({}, null, 2), 'utf8');
+  await writeFile(moduleFile, '<template><div /></template>', 'utf8');
+
+  try {
+    const { customLogger } = createLogCapture();
+    const plugin = dependencyGuard({ enableLiveAudit: false, customLogger });
+    await plugin.configResolved({ root, command: 'build' });
+
+    await plugin.load?.(`${moduleFile}?macro=true`);
+
+    const baselinePath = path.join(
+      root,
+      'node_modules',
+      '.cache',
+      'vite-plugin-dependency-guard',
+      'integrity-baseline.json'
+    );
+    const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
+    assert.ok(baseline.files['node_modules/example/index.vue']);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('runs OSV live audit asynchronously without blocking configResolved', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
   await writeFile(
