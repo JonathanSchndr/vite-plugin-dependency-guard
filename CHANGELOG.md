@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.1...v1.2.2) (2026-06-10)
+
+
+### Bug Fixes
+
+* Nuxt compatibility -- bypass Vite logger and fix SSR shared state ([fd71aea](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/fd71aea8a3999da92084bce17a818b7cf8e47aa3))
+* Nuxt compatibility — bypass Vite logger, fix SSR shared state ([e896c50](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/e896c501330cc9eaed89533c55cd807e4fd1876d))
+
 ## [1.2.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.0...v1.2.1) (2026-06-10)
 
 
