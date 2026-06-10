@@ -77,6 +77,23 @@ async function resolveInstalledVersions(
   return versions;
 }
 
+async function resolveProjectRoot(startDir: string): Promise<string | null> {
+  let currentDir = startDir;
+
+  while (true) {
+    try {
+      await readPackageJson<PackageJson>(path.join(currentDir, 'package.json'));
+      return currentDir;
+    } catch {
+      const parentDir = path.dirname(currentDir);
+      if (parentDir === currentDir) {
+        return null;
+      }
+      currentDir = parentDir;
+    }
+  }
+}
+
 export default function dependencyGuard(userOptions: DependencyGuardOptions = {}): DependencyGuardPlugin {
   const options = normalizeOptions(userOptions);
   const excludeSet = new Set(options.exclude);
@@ -110,7 +127,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
         return;
       }
 
-      rootDir = config.root ?? process.cwd();
+      const configRoot = config.root ?? process.cwd();
       // When frameworks like Nuxt call Vite programmatically the command may be
       // absent from the config object; default to 'serve' so the checks still run.
       viteCommand = config.command ?? 'serve';
@@ -127,6 +144,15 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       }
       hasRunChecks = true;
 
+      const resolvedProjectRoot = await resolveProjectRoot(configRoot);
+      if (!resolvedProjectRoot) {
+        logger.warn(
+          `No package.json found from ${configRoot} upward. Skipping dependency checks.`
+        );
+        return;
+      }
+
+      rootDir = resolvedProjectRoot;
       const packageJsonPath = path.join(rootDir, 'package.json');
       const cachePath = path.join(rootDir, CACHE_RELATIVE_PATH);
       baselinePath = path.join(rootDir, BASELINE_RELATIVE_PATH);
