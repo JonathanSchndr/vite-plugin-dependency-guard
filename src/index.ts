@@ -25,6 +25,7 @@ import {
 import { createLogger } from './logger.js';
 import { DEFAULT_OPTIONS, normalizeOptions } from './options.js';
 import type {
+  CacheData,
   DependencyGuardOptions,
   DependencyGuardPlugin,
   GuardLogger,
@@ -97,14 +98,18 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
       );
 
       if (packageNamesForChecks.length) {
-        const cache = await loadCache(cachePath);
+        const cache: CacheData = options.disableCache
+          ? { packages: {}, osv: {} }
+          : await loadCache(cachePath);
         const now = Date.now();
         const allIssues: string[] = [];
 
         for (const packageName of packageNamesForChecks) {
           const cacheEntry = cache.packages[packageName];
           const isCacheValid =
-            cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, options.cacheTtlMs);
+            !options.disableCache &&
+            cacheEntry != null &&
+            isCacheEntryValid(cacheEntry.cachedAt, now, options.cacheTtlMs);
 
           let registryData;
           if (isCacheValid) {
@@ -117,16 +122,20 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
             }
 
             registryData = result.data;
-            cache.packages[packageName] = {
-              cachedAt: now,
-              data: registryData
-            };
+            if (!options.disableCache) {
+              cache.packages[packageName] = {
+                cachedAt: now,
+                data: registryData
+              };
+            }
           }
 
           allIssues.push(...resolveIssues(packageName, registryData, now, options));
         }
 
-        await saveCache(cachePath, cache);
+        if (!options.disableCache) {
+          await saveCache(cachePath, cache);
+        }
 
         if (allIssues.length) {
           logger.reportIssues(allIssues);
@@ -140,6 +149,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
             cache,
             cachePath,
             cacheTtlMs: options.cacheTtlMs,
+            disableCache: options.disableCache,
             logger
           }).catch((error) => {
             logger.warn(`Live audit failed: ${(error as Error).message}`);

@@ -45,34 +45,49 @@ export async function runLiveAudit(params: {
   cache: CacheData;
   cachePath: string;
   cacheTtlMs: number;
+  disableCache: boolean;
   logger: GuardLogger;
 }): Promise<void> {
-  const { packageNames, cache, cachePath, cacheTtlMs, logger } = params;
+  const { packageNames, cache, cachePath, cacheTtlMs, disableCache, logger } = params;
   const now = Date.now();
 
   const uncached: string[] = [];
-  for (const packageName of packageNames) {
-    const cacheEntry = cache.osv[packageName];
-    const isValid = cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, cacheTtlMs);
-    if (!isValid) {
-      uncached.push(packageName);
+  if (disableCache) {
+    uncached.push(...packageNames);
+  } else {
+    for (const packageName of packageNames) {
+      const cacheEntry = cache.osv[packageName];
+      const isValid = cacheEntry != null && isCacheEntryValid(cacheEntry.cachedAt, now, cacheTtlMs);
+      if (!isValid) {
+        uncached.push(packageName);
+      }
     }
   }
 
+  const fetchedWithoutCache: Record<string, OsvVulnerability[]> = {};
   if (uncached.length) {
     const fetched = await fetchOsvBatch(uncached);
-    for (const packageName of uncached) {
-      cache.osv[packageName] = {
-        cachedAt: now,
-        vulnerabilities: fetched[packageName] ?? []
-      };
+
+    if (disableCache) {
+      for (const packageName of uncached) {
+        fetchedWithoutCache[packageName] = fetched[packageName] ?? [];
+      }
+    } else {
+      for (const packageName of uncached) {
+        cache.osv[packageName] = {
+          cachedAt: now,
+          vulnerabilities: fetched[packageName] ?? []
+        };
+      }
+      await saveCache(cachePath, cache);
     }
-    await saveCache(cachePath, cache);
   }
 
   const findings: string[] = [];
   for (const packageName of packageNames) {
-    const vulnerabilities = cache.osv[packageName]?.vulnerabilities ?? [];
+    const vulnerabilities = disableCache
+      ? fetchedWithoutCache[packageName] ?? []
+      : cache.osv[packageName]?.vulnerabilities ?? [];
     for (const vulnerability of vulnerabilities) {
       findings.push(
         `OSV: ${packageName} affected by ${vulnerability.id ?? 'unknown-id'}${

@@ -75,6 +75,70 @@ test('warns for very new dependency releases', async () => {
   }
 });
 
+test('does not read or write cache when disableCache is enabled', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
+  await writeFile(
+    path.join(root, 'package.json'),
+    JSON.stringify({ dependencies: { example: '^1.0.0' } }, null, 2),
+    'utf8'
+  );
+
+  const oldIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+
+    if (target.startsWith('https://registry.npmjs.org/')) {
+      return {
+        ok: true,
+        json: async () => ({
+          'dist-tags': { latest: '1.0.0' },
+          time: {
+            created: oldIso,
+            modified: oldIso,
+            '1.0.0': oldIso
+          }
+        })
+      };
+    }
+
+    if (target === 'https://api.osv.dev/v1/querybatch') {
+      return {
+        ok: true,
+        json: async () => ({ results: [{ vulns: [] }] })
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${target}`);
+  };
+
+  try {
+    const { logs, logger } = createLoggerCollector();
+    const plugin = dependencyGuard({
+      disableCache: true,
+      minAgeDays: 0,
+      maxUnmaintainedYears: 5,
+      enableLiveAudit: true
+    });
+    await plugin.configResolved({ root, logger, command: 'serve' });
+
+    await new Promise((resolve) => setTimeout(resolve, AUDIT_COMPLETION_WAIT_MS));
+    assert.ok(logs.info.some((entry) => entry.includes('Live audit found no known vulnerabilities')));
+
+    const cachePath = path.join(
+      root,
+      'node_modules',
+      '.cache',
+      'vite-plugin-dependency-guard',
+      'cache.json'
+    );
+    await assert.rejects(() => readFile(cachePath, 'utf8'));
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('throws in error mode when risks are found', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
   await writeFile(

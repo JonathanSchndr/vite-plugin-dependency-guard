@@ -115,6 +115,7 @@ export default defineConfig({
       
       // Caching
       cacheTtlMs: 24 * 60 * 60 * 1000,
+      disableCache: false,
       
       // Phantom dependency detection
       detectPhantomDependencies: true,
@@ -165,6 +166,7 @@ export default defineNuxtConfig({
 | `checkDevDeps` | `boolean` | `true` | Include `devDependencies` in checks. If `false`, only checks `dependencies`. |
 | **Caching** | | | |
 | `cacheTtlMs` | `number` | `86400000` (24h) | Cache validity duration in milliseconds. Registry and OSV responses are cached locally for this period. |
+| `disableCache` | `boolean` | `false` | Completely disable Registry and OSV cache reads/writes. When `true`, `cacheTtlMs` is ignored and fresh data is fetched on every run. |
 | **Phantom Dependency Detection** | | | |
 | `detectPhantomDependencies` | `boolean` | `true` | Enable detection of undeclared transitive imports. |
 | **File Integrity Checks** | | | |
@@ -177,6 +179,8 @@ export default defineNuxtConfig({
 ## Cache Management
 
 The plugin uses local caching to avoid repeated registry/API requests:
+
+Set `disableCache: true` to bypass this cache completely.
 
 ### Registry & OSV Cache
 ```

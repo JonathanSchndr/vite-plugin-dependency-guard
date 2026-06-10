@@ -8,6 +8,7 @@ export const DEFAULT_OPTIONS: Required<DependencyGuardOptions> = {
   exclude: [],
   checkDevDeps: true,
   cacheTtlMs: DAY_MS,
+  disableCache: false,
   detectPhantomDependencies: true,
   enableIntegrityCheck: true,
   integrityMaxFileSizeBytes: DEFAULT_INTEGRITY_MAX_FILE_SIZE_BYTES,
