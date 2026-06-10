@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.2...v1.2.3) (2026-06-10)
+
+
+### Bug Fixes
+
+* resolve Nuxt app-dir project root ([f9c64e0](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/f9c64e0ceae72c2b7011c124d7ada2c87a80c4b4))
+* resolve Nuxt app-dir project root ([d72bd9c](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/d72bd9c0e688413a2dedd67e07652c078d5bf8c7))
+
 ## [1.2.2](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.2.1...v1.2.2) (2026-06-10)
 
 
