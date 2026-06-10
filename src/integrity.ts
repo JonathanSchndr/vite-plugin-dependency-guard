@@ -46,8 +46,13 @@ export function isCacheEntryValid(cachedAt: number | undefined, now: number, ttl
   return typeof cachedAt === 'number' && cachedAt <= now && now - cachedAt <= ttlMs;
 }
 
+export function isVirtualModule(filePath: string): boolean {
+  return filePath.startsWith('\0');
+}
+
 export function isNodeModuleFile(filePath: string): boolean {
-  return sanitizeModuleFilePath(filePath).includes(`${path.sep}node_modules${path.sep}`);
+  const sanitized = sanitizeModuleFilePath(filePath);
+  return !isVirtualModule(sanitized) && sanitized.includes(`${path.sep}node_modules${path.sep}`);
 }
 
 export async function computeFileHash(
