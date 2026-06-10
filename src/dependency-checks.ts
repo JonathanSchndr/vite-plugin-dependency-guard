@@ -2,7 +2,10 @@ import { DAY_MS } from './constants.js';
 import type { DependencyGuardOptions, PackageJson, RegistryData, ResolvedDependencyGuardOptions } from './types.js';
 
 export function parsePackageNames(packageJson: PackageJson, checkDevDeps: boolean): string[] {
-  const names = new Set(Object.keys(packageJson.dependencies ?? {}));
+  const names = new Set([
+    ...Object.keys(packageJson.dependencies ?? {}),
+    ...Object.keys(packageJson.optionalDependencies ?? {})
+  ]);
 
   if (checkDevDeps) {
     for (const dependency of Object.keys(packageJson.devDependencies ?? {})) {
@@ -16,7 +19,8 @@ export function parsePackageNames(packageJson: PackageJson, checkDevDeps: boolea
 export function parseDirectDependencyNames(packageJson: PackageJson): Set<string> {
   return new Set([
     ...Object.keys(packageJson.dependencies ?? {}),
-    ...Object.keys(packageJson.peerDependencies ?? {})
+    ...Object.keys(packageJson.peerDependencies ?? {}),
+    ...Object.keys(packageJson.optionalDependencies ?? {})
   ]);
 }
 
