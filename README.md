@@ -131,6 +131,24 @@ export default defineConfig({
 });
 ```
 
+### Nuxt setup (`nuxt.config.ts`)
+
+```ts
+// nuxt.config.ts
+import dependencyGuard from 'vite-plugin-dependency-guard';
+
+export default defineNuxtConfig({
+  vite: {
+    plugins: [
+      dependencyGuard({
+        behavior: 'warn',
+        minAgeDays: 3
+      })
+    ]
+  }
+});
+```
+
 ## Options
 
 | Option | Type | Default | Description |
