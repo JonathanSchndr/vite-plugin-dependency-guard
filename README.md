@@ -4,6 +4,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/vite-plugin-dependency-guard?logo=npm)](https://www.npmjs.com/package/vite-plugin-dependency-guard)
 [![Build](https://img.shields.io/github/actions/workflow/status/JonathanSchndr/vite-plugin-dependency-guard/publish.yml?branch=main&label=build)](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/actions/workflows/publish.yml)
 [![License](https://img.shields.io/npm/l/vite-plugin-dependency-guard)](https://www.npmjs.com/package/vite-plugin-dependency-guard)
+[![Vite compatibility](https://registry.vite.dev/api/badges?package=vite-plugin-dependency-guard&tool=vite)](https://registry.vite.dev/plugins/vite-plugin-dependency-guard)
 
 > **Proactive supply-chain security for your Vite projects**
 
