@@ -5,6 +5,7 @@ export interface DependencyGuardOptions {
   exclude?: string[];
   checkDevDeps?: boolean;
   cacheTtlMs?: number;
+  disableCache?: boolean;
   detectPhantomDependencies?: boolean;
   enableIntegrityCheck?: boolean;
   integrityMaxFileSizeBytes?: number;

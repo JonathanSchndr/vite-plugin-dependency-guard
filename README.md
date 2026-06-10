@@ -11,7 +11,7 @@
 
 ## Why this plugin?
 
-Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite serve` and `vite build`, helping you catch issues early without replacing traditional tools like `npm audit`.
+Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite dev/build` and (through Nuxt's Vite integration) `nuxt dev/build`, helping you catch issues early without replacing traditional tools like `npm audit`.
 
 Think of it as **continuous dependency monitoring** — like having a security checkpoint integrated into your development loop.
 
@@ -115,6 +115,7 @@ export default defineConfig({
       
       // Caching
       cacheTtlMs: 24 * 60 * 60 * 1000,
+      disableCache: false,
       
       // Phantom dependency detection
       detectPhantomDependencies: true,
@@ -165,6 +166,7 @@ export default defineNuxtConfig({
 | `checkDevDeps` | `boolean` | `true` | Include `devDependencies` in checks. If `false`, only checks `dependencies`. |
 | **Caching** | | | |
 | `cacheTtlMs` | `number` | `86400000` (24h) | Cache validity duration in milliseconds. Registry and OSV responses are cached locally for this period. |
+| `disableCache` | `boolean` | `false` | Completely disable Registry and OSV cache reads/writes. When `true`, `cacheTtlMs` is ignored and fresh data is fetched on every run. |
 | **Phantom Dependency Detection** | | | |
 | `detectPhantomDependencies` | `boolean` | `true` | Enable detection of undeclared transitive imports. |
 | **File Integrity Checks** | | | |
@@ -177,6 +179,8 @@ export default defineNuxtConfig({
 ## Cache Management
 
 The plugin uses local caching to avoid repeated registry/API requests:
+
+Set `disableCache: true` to bypass this cache completely.
 
 ### Registry & OSV Cache
 ```
@@ -201,13 +205,13 @@ node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json
 
 ## Behavior & Output
 
-### During `vite serve` (development)
+### During `vite dev` / `nuxt dev` (development)
 - All 6 checks run synchronously during Vite startup
 - Fresh release, maintenance, registry, and phantom dependency issues are reported immediately
 - OSV audit runs asynchronously in the background by default
 - Does not block the dev server from starting
 
-### During `vite build` (production)
+### During `vite build` / `nuxt build` (production)
 - All 6 checks run as configured
 - By default (`waitForAuditOnBuild: false`), OSV audit runs in background; build proceeds
 - With `waitForAuditOnBuild: true`, build waits for audit to complete before exiting
