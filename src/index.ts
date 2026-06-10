@@ -36,6 +36,17 @@ import type {
 export { DEFAULT_OPTIONS };
 export type { DependencyGuardOptions };
 
+const SUPPORTED_COMMANDS = new Set(['serve', 'build']);
+
+function hasSupportedCliContext(argv: readonly string[]): boolean {
+  const args = argv.map((entry) => entry.toLowerCase());
+  const hasVite = args.some((entry) => entry === 'vite' || entry.endsWith('/vite'));
+  const hasNuxt = args.some((entry) => entry === 'nuxt' || entry.endsWith('/nuxt'));
+  const hasDevOrBuild = args.some((entry) => entry === 'dev' || entry === 'build');
+
+  return (hasVite || hasNuxt) && hasDevOrBuild;
+}
+
 export default function dependencyGuard(userOptions: DependencyGuardOptions = {}): DependencyGuardPlugin {
   const options = normalizeOptions(userOptions);
   const excludeSet = new Set(options.exclude);
@@ -44,7 +55,8 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
   const reportedIntegrityMismatches = new Set<string>();
 
   let rootDir = process.cwd();
-  let viteCommand: 'serve' | 'build' = 'serve';
+  let viteCommand = 'serve';
+  let shouldRunForCurrentContext = true;
   let declaredDirectDeps = new Set<string>();
   let packageNamesForChecks: string[] = [];
   let baselinePath = '';
@@ -57,8 +69,13 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
 
     async configResolved(config) {
       rootDir = config.root ?? process.cwd();
-      viteCommand = config.command ?? 'serve';
+      viteCommand = config.command ?? '';
+      shouldRunForCurrentContext = SUPPORTED_COMMANDS.has(viteCommand) || hasSupportedCliContext(process.argv);
       logger = createLogger(config, options);
+
+      if (!shouldRunForCurrentContext) {
+        return;
+      }
 
       const packageJsonPath = path.join(rootDir, 'package.json');
       const cachePath = path.join(rootDir, CACHE_RELATIVE_PATH);
@@ -134,7 +151,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
     },
 
     resolveId(source) {
-      if (!options.detectPhantomDependencies) {
+      if (!shouldRunForCurrentContext || !options.detectPhantomDependencies) {
         return null;
       }
 
@@ -154,7 +171,7 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
     },
 
     async load(id) {
-      if (!options.enableIntegrityCheck || !isNodeModuleFile(id)) {
+      if (!shouldRunForCurrentContext || !options.enableIntegrityCheck || !isNodeModuleFile(id)) {
         return null;
       }
 
@@ -185,6 +202,10 @@ export default function dependencyGuard(userOptions: DependencyGuardOptions = {}
     },
 
     async buildStart() {
+      if (!shouldRunForCurrentContext) {
+        return;
+      }
+
       if (options.waitForAuditOnBuild && viteCommand === 'build' && liveAuditPromise) {
         await liveAuditPromise;
       }

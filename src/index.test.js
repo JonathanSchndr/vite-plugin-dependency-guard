@@ -53,7 +53,7 @@ test('warns for very new dependency releases', async () => {
   try {
     const { logs, logger } = createLoggerCollector();
     const plugin = dependencyGuard({ minAgeDays: 3, behavior: 'warn', enableLiveAudit: false });
-    await plugin.configResolved({ root, logger });
+    await plugin.configResolved({ root, logger, command: 'serve' });
 
     assert.equal(logs.warn.length, 1);
     assert.match(logs.warn[0], /Dependency risks detected/);
@@ -111,7 +111,10 @@ test('throws in error mode when risks are found', async () => {
       enableLiveAudit: false
     });
 
-    await assert.rejects(() => plugin.configResolved({ root, logger }), /Dependency risks detected/);
+    await assert.rejects(
+      () => plugin.configResolved({ root, logger, command: 'serve' }),
+      /Dependency risks detected/
+    );
   } finally {
     globalThis.fetch = originalFetch;
     await rm(root, { recursive: true, force: true });
@@ -125,7 +128,7 @@ test('warns about phantom dependencies for undeclared bare imports', async () =>
   try {
     const { logs, logger } = createLoggerCollector();
     const plugin = dependencyGuard({ enableLiveAudit: false });
-    await plugin.configResolved({ root, logger });
+    await plugin.configResolved({ root, logger, command: 'serve' });
 
     plugin.resolveId?.('left-pad');
 
@@ -146,7 +149,7 @@ test('creates integrity baseline and warns when file hash changes', async () => 
   try {
     const { logs, logger } = createLoggerCollector();
     const plugin = dependencyGuard({ enableLiveAudit: false });
-    await plugin.configResolved({ root, logger });
+    await plugin.configResolved({ root, logger, command: 'serve' });
 
     await plugin.load?.(moduleFile);
 

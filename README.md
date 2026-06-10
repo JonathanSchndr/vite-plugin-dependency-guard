@@ -11,7 +11,7 @@
 
 ## Why this plugin?
 
-Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite serve` and `vite build`, helping you catch issues early without replacing traditional tools like `npm audit`.
+Modern frontend projects rely heavily on third-party packages. Managing dependency security across an entire project tree is complex. This plugin acts as an automated quality gate that runs during `vite dev/build` and (through Nuxt's Vite integration) `nuxt dev/build`, helping you catch issues early without replacing traditional tools like `npm audit`.
 
 Think of it as **continuous dependency monitoring** — like having a security checkpoint integrated into your development loop.
 
@@ -201,13 +201,13 @@ node_modules/.cache/vite-plugin-dependency-guard/integrity-baseline.json
 
 ## Behavior & Output
 
-### During `vite serve` (development)
+### During `vite dev` / `nuxt dev` (development)
 - All 6 checks run synchronously during Vite startup
 - Fresh release, maintenance, registry, and phantom dependency issues are reported immediately
 - OSV audit runs asynchronously in the background by default
 - Does not block the dev server from starting
 
-### During `vite build` (production)
+### During `vite build` / `nuxt build` (production)
 - All 6 checks run as configured
 - By default (`waitForAuditOnBuild: false`), OSV audit runs in background; build proceeds
 - With `waitForAuditOnBuild: true`, build waits for audit to complete before exiting
