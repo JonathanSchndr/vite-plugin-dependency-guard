@@ -34,6 +34,7 @@ export interface CacheEntry {
 export interface OsvVulnerability {
   id?: string;
   summary?: string;
+  aliases?: string[];
 }
 
 export interface OsvCacheEntry {
@@ -65,6 +66,9 @@ export interface ViteResolvedConfig {
   root?: string;
   command?: 'serve' | 'build';
   logger?: ViteLogger;
+  build?: {
+    ssr?: boolean | string;
+  };
 }
 
 export interface HashCacheEntry {
