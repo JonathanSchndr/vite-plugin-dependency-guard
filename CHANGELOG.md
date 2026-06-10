@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.1.0...v1.1.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* include all build artifacts required by Nuxt runtime import ([981f923](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/981f9239598d4d445223f45576f80f3faa9135e0))
+* include all dist modules in published package ([16e725f](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/commit/16e725fe460def174a7f765a10560f06065eec40))
+
 ## [1.1.0](https://github.com/JonathanSchndr/vite-plugin-dependency-guard/compare/v1.0.2...v1.1.0) (2026-06-06)
 
 
