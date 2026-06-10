@@ -294,3 +294,64 @@ test('runs OSV live audit asynchronously without blocking configResolved', async
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test('resolves the project root from a nested Nuxt app directory', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'dep-guard-test-'));
+  const appRoot = path.join(root, 'app');
+  await mkdir(appRoot, { recursive: true });
+  await writeFile(
+    path.join(root, 'package.json'),
+    JSON.stringify({ dependencies: { example: '^1.0.0' } }, null, 2),
+    'utf8'
+  );
+
+  const oldIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).startsWith('https://registry.npmjs.org/')) {
+      return {
+        ok: true,
+        json: async () => ({
+          'dist-tags': { latest: '1.0.0' },
+          time: {
+            created: oldIso,
+            modified: oldIso,
+            '1.0.0': oldIso
+          }
+        })
+      };
+    }
+
+    throw new Error(`Unexpected URL: ${String(url)}`);
+  };
+
+  try {
+    const { logs, customLogger } = createLogCapture();
+    const plugin = dependencyGuard({
+      minAgeDays: 0,
+      maxUnmaintainedYears: 5,
+      enableLiveAudit: false,
+      enableIntegrityCheck: false,
+      customLogger
+    });
+
+    await plugin.configResolved({ root: appRoot, command: 'serve' });
+
+    const cachePath = path.join(
+      root,
+      'node_modules',
+      '.cache',
+      'vite-plugin-dependency-guard',
+      'cache.json'
+    );
+
+    const cacheRaw = await readFile(cachePath, 'utf8');
+    const cache = JSON.parse(cacheRaw);
+    assert.ok(cache.packages.example);
+    assert.ok(logs.info.some((entry) => entry.includes('All 1 dependencies passed')));
+    assert.equal(logs.warn.length, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(root, { recursive: true, force: true });
+  }
+});

@@ -150,6 +150,9 @@ export default defineNuxtConfig({
 });
 ```
 
+Nuxt often sets Vite's root to the `app/` directory. The plugin automatically walks upward to the
+nearest parent `package.json`, so checks and cache files still use your project root.
+
 ## Options
 
 | Option | Type | Default | Description |
